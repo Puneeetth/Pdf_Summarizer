@@ -1,0 +1,155 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Upload PDF{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="fas fa-upload me-2"></i>Upload PDF for Summarization</h4>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'upload_pdf' %}" enctype="multipart/form-data" id="uploadForm">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.title.id_for_label }}" class="form-label">Document Title (Optional)</label>
+                        {{ form.title }}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="{{ form.summary_length.id_for_label }}" class="form-label">Summary Length</label>
+                        {{ form.summary_length }}
+                    </div>
+                    
+                    <div class="drop-zone mb-4">
+                        <div class="text-center">
+                            <i class="fas fa-file-pdf fa-3x mb-3 text-primary"></i>
+                            <h5>Drop your PDF file here</h5>
+                            <p class="text-muted">or click to browse</p>
+                            <div id="fileName" class="mt-2 text-primary"></div>
+                            {{ form.file }}
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                            <i class="fas fa-magic me-2"></i>Generate Summary
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        {% if recent_documents %}
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="fas fa-history me-2"></i>Recent Summaries</h4>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for doc in recent_documents %}
+                    <a href="{% url 'summary' pk=doc.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">{{ doc.title|default:"Untitled Document" }}</h6>
+                            <small class="text-muted">{{ doc.uploaded_at|date:"F j, Y, g:i a" }}</small>
+                        </div>
+                        <span class="badge bg-primary rounded-pill">{{ doc.summary_length }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="fas fa-info-circle me-2"></i>How It Works</h4>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    <div class="mb-3 d-flex">
+                        <div class="me-3">
+                            <div class="bg-primary rounded-circle d-flex justify-content-center align-items-center" style="width: 40px; height: 40px;">
+                                <i class="fas fa-upload text-white"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <h5>Upload</h5>
+                            <p class="text-muted">Upload any PDF document that you want to summarize.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 d-flex">
+                        <div class="me-3">
+                            <div class="bg-primary rounded-circle d-flex justify-content-center align-items-center" style="width: 40px; height: 40px;">
+                                <i class="fas fa-file-alt text-white"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <h5>Process</h5>
+                            <p class="text-muted">Our system extracts and processes the text content.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 d-flex">
+                        <div class="me-3">
+                            <div class="bg-primary rounded-circle d-flex justify-content-center align-items-center" style="width: 40px; height: 40px;">
+                                <i class="fas fa-brain text-white"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <h5>Analyze</h5>
+                            <p class="text-muted">The Gemini LLM API analyzes and summarizes the content.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex">
+                        <div class="me-3">
+                            <div class="bg-primary rounded-circle d-flex justify-content-center align-items-center" style="width: 40px; height: 40px;">
+                                <i class="fas fa-file-invoice text-white"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <h5>Get Summary</h5>
+                            <p class="text-muted">Receive a concise, well-structured summary of your document.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('uploadForm');
+        
+        if (form) {
+            form.addEventListener('submit', function() {
+                // Create and show loading overlay
+                const loadingOverlay = document.createElement('div');
+                loadingOverlay.className = 'loading-overlay';
+                loadingOverlay.innerHTML = `
+                    <div class="text-center">
+                        <div class="spinner-border text-light mb-3" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <h4>Processing your PDF...</h4>
+                        <p>This may take a few moments depending on file size.</p>
+                    </div>
+                `;
+                document.body.appendChild(loadingOverlay);
+                
+                // Disable submit button
+                document.getElementById('submitBtn').disabled = true;
+            });
+        }
+    });
+</script>
+{% endblock %}

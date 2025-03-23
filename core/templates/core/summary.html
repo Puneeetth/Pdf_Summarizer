@@ -1,0 +1,174 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Document Summary{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                    <li class="breadcrumb-item active">Document Summary</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0"><i class="fas fa-file-alt me-2"></i>Summary</h4>
+                    <span class="badge bg-primary rounded-pill">{{ document.summary_length }} summary</span>
+                </div>
+                <div class="card-body">
+                    {% if document.summary_completed and document.summary %}
+                        <div class="summary-content">
+                            {{ document.summary|linebreaks }}
+                        </div>
+                    {% elif document.summary_error %}
+                        <div class="alert alert-danger">
+                            <h5><i class="fas fa-exclamation-triangle me-2"></i>Error generating summary</h5>
+                            <p>{{ document.summary_error }}</p>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary mb-3" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <h5>Generating summary...</h5>
+                            <p class="text-muted">This may take a few moments.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="fas fa-align-left me-2"></i>Document Text</h4>
+                </div>
+                <div class="card-body">
+                    {% if document.extraction_completed and document.extracted_text %}
+                        <div class="extracted-text p-3 bg-light" style="max-height: 400px; overflow-y: auto;">
+                            {{ document.extracted_text|linebreaks }}
+                        </div>
+                    {% elif document.extraction_error %}
+                        <div class="alert alert-danger">
+                            <h5><i class="fas fa-exclamation-triangle me-2"></i>Error extracting text</h5>
+                            <p>{{ document.extraction_error }}</p>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary mb-3" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <h5>Extracting text from PDF...</h5>
+                            <p class="text-muted">This may take a few moments.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="fas fa-info-circle me-2"></i>Document Info</h4>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-heading me-2"></i>Title</span>
+                            <span class="text-primary">{{ document.title|default:"Untitled Document" }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-calendar me-2"></i>Uploaded</span>
+                            <span class="text-primary">{{ document.uploaded_at|date:"F j, Y, g:i a" }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-file me-2"></i>File Size</span>
+                            <span class="text-primary">{{ document.file_size }} KB</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-clock me-2"></i>Processing Time</span>
+                            <span class="text-primary">{{ document.processing_time|floatformat:2 }} seconds</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="fas fa-share-alt me-2"></i>Share & Export</h4>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" id="copyBtn">
+                            <i class="fas fa-copy me-2"></i>Copy Summary
+                        </button>
+                        <button class="btn btn-outline-success" id="downloadBtn">
+                            <i class="fas fa-file-download me-2"></i>Download as TXT
+                        </button>
+                        <a href="{% url 'home' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>New Summary
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check processing status if not complete
+        {% if not document.summary_completed and not document.summary_error %}
+            checkStatus();
+        {% endif %}
+        
+        // Copy summary to clipboard
+        document.getElementById('copyBtn').addEventListener('click', function() {
+            const summaryText = document.querySelector('.summary-content').innerText;
+            navigator.clipboard.writeText(summaryText).then(() => {
+                // Show success tooltip
+                alert('Summary copied to clipboard!');
+            });
+        });
+        
+        // Download summary as text file
+        document.getElementById('downloadBtn').addEventListener('click', function() {
+            const summaryText = document.querySelector('.summary-content').innerText;
+            const fileName = "{{ document.title|default:'summary' }}.txt";
+            
+            const blob = new Blob([summaryText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.click();
+            
+            URL.revokeObjectURL(url);
+        });
+        
+        // Function to check processing status
+        function checkStatus() {
+            fetch('{% url "check_status" document.id %}')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.summary_completed || data.summary_error) {
+                        // Reload page to show results
+                        window.location.reload();
+                    } else {
+                        // Check again after 3 seconds
+                        setTimeout(checkStatus, 3000);
+                    }
+                })
+                .catch(error => console.error('Error checking status:', error));
+        }
+    });
+</script>
+{% endblock %}
