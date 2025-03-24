@@ -112,3 +112,4 @@ pdf_summarizer/
 ├── static/                # Static assets
 ├── media/                 # Uploaded files
 └── pdf_summarizer/        # Project settings
+![alt text](Home.png)![alt text](Upload_File.png)![alt text](Results.png)![alt text](Recent_Files.png)
