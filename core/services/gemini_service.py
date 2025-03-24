@@ -12,7 +12,7 @@ class GeminiService:
             raise ValueError("Gemini API key is not set")
         
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-pro')
+        self.model = genai.GenerativeModel('gemini-2.0-flash')
     
     def generate_summary(self, text, length='medium'):
         """
